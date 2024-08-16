@@ -1,48 +1,73 @@
 pipeline {
     agent any
+
     environment {
-        // Menyimpan kredensial dalam variabel lingkungan
-        GITHUB_TOKEN = credentials('github-fine-grained-token')
-        SLACK_TOKEN = credentials('slack-notification-token')
+        SLACK_CHANNEL = '#jenkins'
+        SLACK_CREDENTIAL_ID = 'slack-notification-token'
+        GITHUB_CREDENTIALS_ID = 'github-fine-grained-token'
+        DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
     }
+
+    triggers {
+        pollSCM('* * * * *')  // Poll SCM setiap menit
+    }
+
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                script {
-                    // Checkout kode dari GitHub menggunakan token
-                    git url: 'https://github.com/faisalnuriman/backend-dumbflix.git', credentialsId: 'github-fine-grained-token'
-                }
+                checkout([
+                    $class: 'GitSCM', 
+                    branches: [[name: '*/main']], 
+                    doGenerateSubmoduleConfigurations: false, 
+                    extensions: [], 
+                    submoduleCfg: [], 
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/faisalnuriman/backend-dumbflix.git',
+                        credentialsId: "${GITHUB_CREDENTIALS_ID}"
+                    ]]
+                ])
             }
         }
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Membangun Docker image dengan tag 'latest'
-                    docker.build("faisalnuriman/backend-server:latest")
+                    VERSION = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                    sh "docker build -t faisalnuriman/backend-server:${VERSION} -f Dockerfile ."
                 }
             }
         }
         stage('Push to Docker Hub') {
             steps {
-                // Gunakan kredensial Docker Hub untuk login dan push image
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    script {
-                        docker.withRegistry('https://index.docker.io/v1/', 'docker-hub-credentials') {
-                            docker.image('faisalnuriman/backend-server:latest').push()
-                        }
+                script {
+                    withDockerRegistry([credentialsId: "${DOCKER_CREDENTIALS_ID}", url: 'https://index.docker.io/v1/']) {
+                        sh "docker push faisalnuriman/backend-server:${VERSION}"
                     }
                 }
             }
         }
     }
+
     post {
         success {
-            // Kirim notifikasi Slack jika build berhasil
-            slackSend (channel: '#jenkins', token: "${SLACK_TOKEN}", message: "Build succeeded!")
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                message: "Pipeline sukses: ${env.JOB_NAME} #${env.BUILD_NUMBER} dengan version = ${VERSION}",
+                tokenCredentialId: env.SLACK_CREDENTIAL_ID
+            )
         }
         failure {
-            // Kirim notifikasi Slack jika build gagal
-            slackSend (channel: '#jenkins', token: "${SLACK_TOKEN}", message: "Build failed!")
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                message: "Pipeline gagal: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                tokenCredentialId: env.SLACK_CREDENTIAL_ID
+            )
+        }
+        unstable {
+            slackSend(
+                channel: env.SLACK_CHANNEL,
+                message: "Pipeline tidak stabil: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                tokenCredentialId: env.SLACK_CREDENTIAL_ID
+            )
         }
     }
 }
