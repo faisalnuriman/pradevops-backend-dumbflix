@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'backend-agent'
+        label 'backend-node'
     }
 
     environment {
@@ -11,7 +11,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('H * * * *')
+        pollSCM('* * * * *')
     }
 
     stages {
