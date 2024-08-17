@@ -8,6 +8,8 @@ pipeline {
         SLACK_CREDENTIAL_ID = 'slack-notification-token'
         GITHUB_CREDENTIALS_ID = 'github-fine-grained-token'
         DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
+        DEPLOY_SERVER = '116.193.190.29'  // IP server backend Anda
+        DEPLOY_USER = 'back-end'           // Username SSH server backend Anda
     }
 
     triggers {
@@ -44,6 +46,21 @@ pipeline {
                     withDockerRegistry([credentialsId: "${DOCKER_CREDENTIALS_ID}", url: 'https://index.docker.io/v1/']) {
                         sh "docker push faisalnuriman/backend-server:${VERSION}"
                     }
+                }
+            }
+        }
+        stage('Deploy to Backend Server') {
+            steps {
+                script {
+                    // Deploy ke server backend menggunakan SSH
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_SERVER} '
+                        docker pull faisalnuriman/backend-server:${VERSION} && \
+                        docker stop backend-server || true && \
+                        docker rm backend-server || true && \
+                        docker run -d --name backend-server faisalnuriman/backend-server:${VERSION}
+                    '
+                    """
                 }
             }
         }
