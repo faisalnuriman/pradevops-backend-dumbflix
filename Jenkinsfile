@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'backend-node'
+        label 'backend-node' // Menggunakan agen dengan label 'backend-node'
     }
 
     environment {
@@ -11,7 +11,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('* * * * *')
+        pollSCM('* * * * *') // Polling SCM setiap menit
     }
 
     stages {
@@ -44,6 +44,18 @@ pipeline {
                     withDockerRegistry([credentialsId: "${DOCKER_CREDENTIALS_ID}", url: 'https://index.docker.io/v1/']) {
                         sh "docker push faisalnuriman/backend-server:${VERSION}"
                     }
+                }
+            }
+        }
+        stage('Deploy to Server') {
+            steps {
+                script {
+                    sh '''
+                    docker stop backend-server || true
+                    docker rm backend-server || true
+                    docker pull faisalnuriman/backend-server:${VERSION}
+                    docker run -d --name backend-server -p 3000:3000 faisalnuriman/backend-server:${VERSION}
+                    '''
                 }
             }
         }
