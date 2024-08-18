@@ -33,16 +33,24 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
+                    // Mengambil versi dari commit SHA
                     VERSION = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                    sh "docker build -t faisalnuriman/backend-server:${VERSION} -f Dockerfile ."
+                    // Membangun Docker image dengan tag yang sesuai
+                    sh "docker build -t faisalnuriman/backend-server:${VERSION} ."
                 }
             }
         }
         stage('Push to Docker Hub') {
             steps {
                 script {
+                    // Login ke Docker Hub
                     withDockerRegistry([credentialsId: "${DOCKER_CREDENTIALS_ID}", url: 'https://index.docker.io/v1/']) {
+                        sh "docker login" // Login ke Docker Hub
+                        // Tag Docker image
+                        sh "docker tag faisalnuriman/backend-server:${VERSION} faisalnuriman/backend-server:latest"
+                        // Push Docker image ke Docker Hub
                         sh "docker push faisalnuriman/backend-server:${VERSION}"
+                        sh "docker push faisalnuriman/backend-server:latest"
                     }
                 }
             }
@@ -50,11 +58,14 @@ pipeline {
         stage('Deploy to Server') {
             steps {
                 script {
+                    // Menghentikan dan menghapus container yang sedang berjalan
                     sh '''
-                    docker stop backend-server || true
-                    docker rm backend-server || true
+                    docker stop backend-container || true
+                    docker rm backend-container || true
+                    // Mengambil Docker image terbaru
                     docker pull faisalnuriman/backend-server:${VERSION}
-                    docker run -d --name backend-server -p 3000:3000 faisalnuriman/backend-server:${VERSION}
+                    // Menjalankan container baru dari image terbaru
+                    docker run -d --name backend-container -p 5000:5000 faisalnuriman/backend-server:${VERSION}
                     '''
                 }
             }
