@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'backend-node'
+        label 'backend-node' // Menggunakan agen dengan label 'backend-node'
     }
 
     environment {
@@ -11,7 +11,7 @@ pipeline {
     }
 
     triggers {
-        pollSCM('* * * * *')
+        pollSCM('* * * * *') // Polling SCM setiap menit
     }
 
     stages {
@@ -34,7 +34,7 @@ pipeline {
             steps {
                 script {
                     VERSION = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                    sh "docker build -t faisalnuriman/backend-server:${VERSION} ."
+                    sh "docker build -t server-backend:latest -f Dockerfile ."
                 }
             }
         }
@@ -42,10 +42,8 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry([credentialsId: "${DOCKER_CREDENTIALS_ID}", url: 'https://index.docker.io/v1/']) {
-                        sh "docker login"
-                        sh "docker tag faisalnuriman/backend-server:${VERSION} faisalnuriman/backend-server:latest"
-                        sh "docker push faisalnuriman/backend-server:${VERSION}"
-                        sh "docker push faisalnuriman/backend-server:latest"
+                        sh "docker tag server-backend:latest faisalnuriman/server-backend:latest"
+                        sh "docker push faisalnuriman/server-backend:latest"
                     }
                 }
             }
@@ -54,14 +52,10 @@ pipeline {
             steps {
                 script {
                     sh '''
-                    set -e
-
                     docker stop backend-container || true
                     docker rm backend-container || true
-
-                    docker pull faisalnuriman/backend-server:${VERSION}
-
-                    docker run -d --name backend-container -p 5000:5000 faisalnuriman/backend-server:${VERSION}
+                    docker pull faisalnuriman/server-backend:latest
+                    docker run -d --name backend-container -p 5000:5000 faisalnuriman/server-backend:latest
                     '''
                 }
             }
