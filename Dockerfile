@@ -17,7 +17,7 @@ COPY . .
 EXPOSE 5000
 
 # Set environment variables dari file .env
-ENV DB_HOST=103.226.138.198
+ENV DB_HOST=103.217.145.239
 ENV DB_USER=DBfaisal
 ENV DB_PASS=13@Faisal
 ENV DB_NAME=dumbflix

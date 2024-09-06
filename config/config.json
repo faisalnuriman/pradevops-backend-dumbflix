@@ -3,21 +3,21 @@
     "username": "DBfaisal",
     "password": "13@Faisal",
     "database": "dumbflix",
-    "host": "103.226.138.198",
+    "host": "103.217.145.239",
     "dialect": "mysql"
   },
   "test": {
     "username": "DBfaisal",
     "password": "13@Faisal",
     "database": "dumbflix",
-    "host": "103.226.138.198",
+    "host": "103.217.145.239",
     "dialect": "mysql"
   },
   "production": {
     "username": "DBfaisal",
     "password": "13@Faisal",
     "database": "dumbflix",
-    "host": "103.226.138.198",
+    "host": "103.217.145.239",
     "dialect": "mysql"
   }
 }
