@@ -5,9 +5,9 @@ pipeline {
 
     environment {
         SLACK_CHANNEL = '#jenkins'
-        SLACK_CREDENTIAL_ID = 'slack-notification-token'
-        GITHUB_CREDENTIALS_ID = 'github-fine-grained-token'
-        DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
+        SLACK_CREDENTIAL_ID = 'slack-notification'
+        GITHUB_CREDENTIALS_ID = 'github-credentials'
+        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
     }
 
     triggers {
@@ -24,7 +24,7 @@ pipeline {
                     extensions: [],
                     submoduleCfg: [],
                     userRemoteConfigs: [[
-                        url: 'https://github.com/faisalnuriman/backend-dumbflix.git',
+                        url: 'git@github.com:faisalnuriman/pradevops-backend-dumbflix.git',
                         credentialsId: "${GITHUB_CREDENTIALS_ID}"
                     ]]
                 ])
@@ -34,7 +34,7 @@ pipeline {
             steps {
                 script {
                     VERSION = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                    sh "docker build -t server-backend:latest -f Dockerfile ."
+                    sh "docker build -t backend-pradevops:latest -f Dockerfile ."
                 }
             }
         }
@@ -42,8 +42,8 @@ pipeline {
             steps {
                 script {
                     withDockerRegistry([credentialsId: "${DOCKER_CREDENTIALS_ID}", url: 'https://index.docker.io/v1/']) {
-                        sh "docker tag server-backend:latest faisalnuriman/server-backend:latest"
-                        sh "docker push faisalnuriman/server-backend:latest"
+                        sh "docker tag backend-pradevops:latest faisalnuriman/backend-pradevops:latest"
+                        sh "docker push faisalnuriman/backend-pradevops:latest"
                     }
                 }
             }
@@ -54,8 +54,8 @@ pipeline {
                     sh '''
                     docker stop backend-container || true
                     docker rm backend-container || true
-                    docker pull faisalnuriman/server-backend:latest
-                    docker run -d --name backend-container -p 5000:5000 faisalnuriman/server-backend:latest
+                    docker pull faisalnuriman/backend-pradevops:latest
+                    docker run -d --name backend-container -p 5000:5000 faisalnuriman/backend-pradevops:latest
                     '''
                 }
             }
